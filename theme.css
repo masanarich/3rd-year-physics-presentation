@@ -1,0 +1,36 @@
+:root{
+  --accent: #29b2b2; /* teal */
+  --text: #f1f5f9;   /* near-white */
+  --muted: #94a3b8;  /* slate-400 */
+}
+
+.reveal { color: var(--text); }
+.reveal .accent { color: var(--accent); }
+.reveal .accent-border { border: 2px solid var(--accent); }
+
+.reveal h1, .reveal h2, .reveal h3 { letter-spacing: 0.5px; }
+.reveal .subtitle { opacity: .9; }
+
+.diagram {
+  display: inline-flex; align-items: center; gap: 14px; margin-top: 18px;
+}
+.diagram .chip {
+  padding: 10px 16px; border-radius: 999px; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.diagram .arrow { font-size: 1.6rem; opacity: .65; }
+
+.twocol {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;
+}
+.caption { font-size: .9rem; color: var(--muted); margin-top: .6rem; }
+.big { font-size: 1.8rem; }
+
+.reveal section img { box-shadow: 0 14px 40px rgba(0,0,0,.35); }
+
+/* Code blocks */
+.reveal pre code { font-size: 0.9rem; line-height: 1.35; }
+
+/* Links (if any) */
+.reveal a { color: var(--accent); text-decoration: none; border-bottom: 1px dashed var(--accent); }
+.reveal a:hover { opacity: .85; }

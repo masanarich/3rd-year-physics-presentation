@@ -1,1 +1,307 @@
-Maduwa Faranani
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Quantum Computing — 3rd Year Presentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Reveal core styles -->
+    <link rel="stylesheet" href="https://unpkg.com/reveal.js/dist/reveal.css" />
+    <!-- Base dark theme (we’ll override with theme.css) -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/reveal.js/dist/theme/black.css"
+      id="reveal-theme"
+    />
+    <!-- Code highlight theme -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/reveal.js/plugin/highlight/monokai.css"
+    />
+    Your custom tweaks
+    <link rel="stylesheet" href=".theme.css" />
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <!-- H1 — Title -->
+        <section data-transition="fade">
+          <h1 class="accent">Quantum Computing</h1>
+          <h3>What, Why, and a Tour of Shor’s Algorithm</h3>
+          <p style="margin-top: 1.2rem">
+            <small>Faranani Maduwa — 3rd Year Physics Research</small>
+          </p>
+          <aside class="notes">
+            12 minutes total. Keep slides minimal; tell the story out loud.
+          </aside>
+        </section>
+
+        <!-- H2 — Introduction (vertical stack) -->
+        <section>
+          <!-- V2A -->
+          <section data-auto-animate>
+            <h2>What is computing?</h2>
+            <p class="subtitle">
+              Turning <span class="accent">inputs</span> into
+              <span class="accent">useful outputs</span> via rules (algorithms).
+            </p>
+            <div class="diagram" data-id="flow">
+              <div class="chip">Inputs</div>
+              <div class="arrow">⟶</div>
+              <div class="chip accent-border">Algorithm</div>
+              <div class="arrow">⟶</div>
+              <div class="chip">Outputs</div>
+            </div>
+            <aside class="notes">
+              Simple mental model: input → algorithm → output. Classical
+              computers do this with bits and logic gates.
+            </aside>
+          </section>
+
+          <!-- V2B -->
+          <section data-auto-animate>
+            <h2>Where classical hits limits</h2>
+            <ul>
+              <li class="fragment">Factoring very large integers (RSA)</li>
+              <li class="fragment">Quantum chemistry / materials simulation</li>
+              <li class="fragment">Combinatorial explosions</li>
+            </ul>
+            <p class="fragment fade-up">
+              Nature is quantum… maybe our computers should be too.
+            </p>
+          </section>
+        </section>
+
+        <!-- H3 — What is a quantum computer? (vertical stack) -->
+        <section>
+          <!-- V3A -->
+          <section data-auto-animate>
+            <h2>Bit vs Qubit</h2>
+            <div class="twocol">
+              <div>
+                <h4>Classical bit</h4>
+                <p>Either 0 or 1</p>
+              </div>
+              <div>
+                <h4>Qubit</h4>
+                <p>
+                  Superposition: \( \,|\psi\rangle = \alpha|0\rangle +
+                  \beta|1\rangle,\; |\alpha|^2+|\beta|^2=1 \)
+                </p>
+              </div>
+            </div>
+            <p class="caption">
+              State lives on the Bloch sphere (we’ll use this visually, not
+              algebraically).
+            </p>
+          </section>
+
+          <!-- V3B -->
+          <section data-auto-animate>
+            <h2>Key ingredients</h2>
+            <ul>
+              <li class="fragment">
+                <b>Superposition</b> — explore many possibilities at once
+              </li>
+              <li class="fragment">
+                <b>Interference</b> — reinforce right answers, cancel wrong ones
+              </li>
+              <li class="fragment">
+                <b>Entanglement</b> — strong correlations across qubits
+              </li>
+            </ul>
+          </section>
+
+          <!-- V3C -->
+          <section data-auto-animate>
+            <h2>Quantum circuits</h2>
+            <p>Sequences of gates that transform qubit states.</p>
+            <img
+              src="./img/mini-circuit.png"
+              alt="Quantum circuit"
+              style="max-height: 360px; border-radius: 12px"
+            />
+            <p class="caption">Think: programmable interference patterns.</p>
+          </section>
+        </section>
+
+        <!-- H4 — Why quantum computers are exciting -->
+        <section>
+          <section>
+            <h2>Why be excited?</h2>
+            <ul>
+              <li class="fragment">
+                Exponential state spaces (powerful representations)
+              </li>
+              <li class="fragment">
+                Speedups on specific problems (e.g., factoring, search,
+                simulation)
+              </li>
+              <li class="fragment">New ways of modeling physical systems</li>
+            </ul>
+          </section>
+        </section>
+
+        <!-- H5 — Shor’s Algorithm (focus on r) -->
+        <section>
+          <!-- V5A -->
+          <section data-auto-animate>
+            <h2>RSA in 60 seconds</h2>
+            <p>
+              Security relies on: <span class="accent">easy to multiply</span>,
+              <em>hard to factor</em>.
+            </p>
+            <img
+              src="./img/rsa-diagram.png"
+              alt="RSA diagram"
+              style="max-height: 360px; border-radius: 12px"
+            />
+            <aside class="notes">
+              Public key uses N = p·q. If you can factor N, RSA breaks.
+            </aside>
+          </section>
+
+          <!-- V5B -->
+          <section data-auto-animate>
+            <h2>Shor’s big idea</h2>
+            <p class="subtitle">
+              Don’t factor directly.
+              <span class="accent">Find a period</span> instead.
+            </p>
+            <p>
+              \( f(x)=a^x \bmod N \) is periodic with some smallest period \( r
+              \).
+            </p>
+            <img
+              src="./img/period-plot.png"
+              alt="Periodic function plot"
+              style="max-height: 360px; border-radius: 12px"
+            />
+          </section>
+
+          <!-- V5C -->
+          <section data-auto-animate>
+            <h2>Focus on <span class="accent">r</span></h2>
+            <ul>
+              <li class="fragment">Prepare a superposition over many \(x\)</li>
+              <li class="fragment">
+                Compute \( a^x \bmod N \) in a second register
+              </li>
+              <li class="fragment">
+                Apply QFT → peaks at multiples of \(1/r\)
+              </li>
+              <li class="fragment">
+                Measure → infer \( r \) (continued fractions)
+              </li>
+            </ul>
+            <img
+              src="./img/qft-peaks.png"
+              alt="QFT peaks"
+              style="max-height: 300px; border-radius: 12px"
+            />
+          </section>
+
+          <!-- V5D -->
+          <section data-auto-animate>
+            <h2>From r to factors</h2>
+            <p>
+              If \( r \) is even and \( a^{r/2} \not\equiv -1 \pmod N \), then
+            </p>
+            <p class="big">
+              \(\displaystyle \gcd\!\big(a^{r/2}-1,\,N\big)\ \text{ and }\
+              \gcd\!\big(a^{r/2}+1,\,N\big) \)
+            </p>
+            <p>are non-trivial factors of \(N\).</p>
+          </section>
+
+          <!-- V5E — Pseudocode -->
+          <section>
+            <h2>Shor’s algorithm (concise)</h2>
+            <pre><code class="language-text">Input: odd composite N
+repeat:
+  1. Pick a uniformly from {2,...,N−2}
+  2. g ← gcd(a, N); if g &gt; 1 return g
+  3. r ← QuantumPeriodFinding(f(x)=a^x mod N)
+  4. if r is odd or a^(r/2) ≡ −1 (mod N): continue
+  5. return gcd(a^(r/2)−1, N) or gcd(a^(r/2)+1, N)</code></pre>
+            <p class="caption">
+              The quantum speedup sits inside the period-finding subroutine.
+            </p>
+          </section>
+        </section>
+
+        <!-- H6 — Reality & future -->
+        <section>
+          <section>
+            <h2>Reality check</h2>
+            <ul>
+              <li class="fragment">Noisy qubits, decoherence</li>
+              <li class="fragment">Scaling + error correction is hard</li>
+              <li class="fragment">But progress is steady</li>
+            </ul>
+            <p class="fragment">Post-quantum crypto is being standardized.</p>
+          </section>
+        </section>
+
+        <!-- H7 — Takeaways & Q&A -->
+        <section>
+          <section>
+            <h2>Takeaways</h2>
+            <ul>
+              <li class="fragment">
+                Computers transform inputs to outputs; classical has limits
+              </li>
+              <li class="fragment">
+                Quantum = superposition + interference + entanglement
+              </li>
+              <li class="fragment">
+                Shor: factors via <span class="accent">period r</span> + QFT
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h2>Questions?</h2>
+            <p class="caption">Backup slides available if needed.</p>
+          </section>
+        </section>
+
+        <!-- Optional hidden backup slides go here -->
+      </div>
+    </div>
+
+    <!-- Reveal core + plugins -->
+    <script src="https://unpkg.com/reveal.js/dist/reveal.js"></script>
+    <script src="https://unpkg.com/reveal.js/plugin/notes/notes.js"></script>
+    <script src="https://unpkg.com/reveal.js/plugin/highlight/highlight.js"></script>
+    <script src="https://unpkg.com/reveal.js/plugin/math/math.js"></script>
+
+    <!-- MathJax 3 (let Reveal Math plugin load it) -->
+    <script>
+      const deck = new Reveal({
+        hash: true,
+        slideNumber: "c/t",
+        transition: "fade",
+        backgroundTransition: "fade",
+        controlsTutorial: false,
+        center: true,
+        width: 1280,
+        height: 720, // 16:9
+        plugins: [RevealNotes, RevealHighlight, RevealMath.MathJax3],
+        math: {
+          mathjax:
+            "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js",
+          tex: {
+            inlineMath: [
+              ["\\(", "\\)"],
+              ["$", "$"],
+            ],
+          },
+        },
+      });
+      deck.initialize();
+    </script>
+
+    <script src="./custom.js"></script>
+  </body>
+</html>
