@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Quantum Computing — 3rd Year Presentation</title>
+    <title>Quantum Computing - 3rd Year Presentation</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Reveal.js core styles -->
@@ -25,25 +25,30 @@
     <div class="reveal">
       <div class="slides">
         <!-- ==========================================================
-             1️⃣  INTRODUCTION
+             1️⃣  TITLE + AGENDA
              ========================================================== -->
         <section data-transition="fade">
           <h1 class="accent">Quantum Computing</h1>
-          <h3>What, Why and a Tour of Shor’s Algorithm</h3>
+          <h3>What, why, and a tour of Shor’s algorithm</h3>
           <p style="margin-top: 1.2rem">
             <small>Faranani Maduwa — 3rd Year Physics Research</small>
           </p>
           <aside class="notes">
-            12 minutes total + 3 for questions. Keep it visual and story-driven.
+            Tone-setter. You’ll guide them from classical computing to a quantum
+            way of thinking, and end with Shor. Keep it story-first.
           </aside>
+          <p class="caption fragment" style="margin-top: 1.4rem">
+            Roadmap: Computer → Limits → Why quantum → Qubits → Circuits → RSA →
+            Shor → Reality → Takeaways
+          </p>
         </section>
 
         <!-- ==========================================================
-             2️⃣  WHAT IS COMPUTING
+             2️⃣  WHAT IS A COMPUTER (Classical)
              ========================================================== -->
         <section>
           <section data-auto-animate>
-            <h2>What is computing?</h2>
+            <h2>What is a computer?</h2>
             <p class="subtitle">
               Turning <span class="accent">inputs</span> into
               <span class="accent">useful outputs</span> via rules (algorithms).
@@ -52,28 +57,83 @@
             <div style="text-align: center; margin-top: 10px">
               <button id="pipeline-toggle">Toggle Classical / Quantum</button>
             </div>
+            <aside class="notes">
+              Inputs → algorithm → outputs. In classical computing, rules act on
+              bits with deterministic or probabilistic logic. Keep it visual.
+            </aside>
           </section>
 
           <section data-auto-animate>
             <h2>Where classical hits limits</h2>
             <ul>
               <li class="fragment">Factoring very large integers (RSA)</li>
-              <li class="fragment">Quantum chemistry / materials simulation</li>
+              <li class="fragment">Quantum chemistry and materials</li>
               <li class="fragment">Combinatorial explosions</li>
             </ul>
             <p class="fragment fade-up">
-              Nature is quantum … maybe our computers should be too.
+              Nature is quantum... maybe our computers should be too.
             </p>
+            <aside class="notes">
+              Motivate the “why” before introducing qubits. These are the
+              bottlenecks where quantum promises advantages.
+            </aside>
           </section>
         </section>
 
         <!-- ==========================================================
-             3️⃣  WHAT IS A QUANTUM COMPUTER
+             3️⃣  WHY QUANTUM (Motivation + Interference)
+             ========================================================== -->
+        <section>
+          <section>
+            <h2>Why be excited?</h2>
+            <ul>
+              <li class="fragment">
+                Exponential state spaces (richer representations)
+              </li>
+              <li class="fragment">
+                Speedups on specific problems (factoring, search, simulation)
+              </li>
+              <li class="fragment">New ways to model physical systems</li>
+            </ul>
+            <aside class="notes">
+              Promise, not panacea: advantages on specific structures. This sets
+              up Shor later.
+            </aside>
+          </section>
+
+          <!-- Interference -->
+          <section data-auto-animate>
+            <h2>Interference = selection by phase</h2>
+            <canvas id="interf-canvas" width="900" height="230"></canvas>
+            <div style="margin-top: 10px">
+              <label>Phase φ: <span id="interf-label">1.00π</span></label>
+              <input
+                id="interf-phase"
+                type="range"
+                min="0"
+                max="2"
+                step="0.01"
+                value="1.00"
+              />
+            </div>
+            <p class="caption">
+              Constructive when φ≈0, destructive when φ≈π. Algorithms amplify
+              “good paths.”
+            </p>
+            <aside class="notes">
+              This is the key physical trick. Later the QFT will steer
+              constructive interference into sharp frequency peaks.
+            </aside>
+          </section>
+        </section>
+
+        <!-- ==========================================================
+             4️⃣  WHAT IS A QUANTUM COMPUTER (Qubits + Gates)
              ========================================================== -->
         <section>
           <!-- Bit vs Qubit -->
           <section data-auto-animate>
-            <h2>Bit vs Qubit</h2>
+            <h2>Bits vs qubits</h2>
             <div class="bitqubit">
               <div class="cell">
                 <div class="label">Bit</div>
@@ -89,6 +149,10 @@
             <p class="caption">
               Qubits can be |0⟩, |1⟩ or any superposition in between.
             </p>
+            <aside class="notes">
+              Emphasize amplitudes and phases, not probabilities alone.
+              Measurement collapses.
+            </aside>
           </section>
 
           <!-- Bloch sphere -->
@@ -104,9 +168,11 @@
               <button onclick="setState('super')">Superposition</button>
             </div>
             <p class="caption">
-              The Bloch sphere shows how any single qubit state can be
-              represented geometrically.
+              The Bloch sphere is a geometric picture of any single-qubit state.
             </p>
+            <aside class="notes">
+              Latitude ~ phase, longitude ~ relative phase. Gates are rotations.
+            </aside>
           </section>
 
           <!-- Entanglement -->
@@ -123,11 +189,15 @@
               Random individually but
               <span class="accent">correlated together</span> when entangled.
             </p>
+            <aside class="notes">
+              Use the demo: outcomes look random per qubit, but joint outcomes
+              are linked.
+            </aside>
           </section>
 
           <!-- Bell state -->
           <section data-auto-animate>
-            <h2>H + CNOT → Bell state</h2>
+            <h2>From gates to a Bell state</h2>
             <svg
               id="bell-circuit"
               width="800"
@@ -171,50 +241,33 @@
             <p class="caption">
               Step through: |00⟩ → H → CNOT → (|00⟩+|11⟩)/√2.
             </p>
+            <aside class="notes">
+              This is your quick “circuits in action” moment before Shor.
+            </aside>
           </section>
         </section>
 
         <!-- ==========================================================
-             4️⃣  WHY QUANTUM IS EXCITING
+             5️⃣  BRIDGE: CIRCUITS → ALGORITHMS
              ========================================================== -->
-        <section>
-          <section>
-            <h2>Why be excited?</h2>
-            <ul>
-              <li class="fragment">
-                Exponential state spaces (powerful representations)
-              </li>
-              <li class="fragment">
-                Speedups on specific problems (factoring, search, simulation)
-              </li>
-              <li class="fragment">New ways of modeling physical systems</li>
-            </ul>
-          </section>
-
-          <!-- Interference -->
-          <section data-auto-animate>
-            <h2>Interference = selection by phase</h2>
-            <canvas id="interf-canvas" width="900" height="230"></canvas>
-            <div style="margin-top: 10px">
-              <label>Phase φ: <span id="interf-label">1.00π</span></label>
-              <input
-                id="interf-phase"
-                type="range"
-                min="0"
-                max="2"
-                step="0.01"
-                value="1.00"
-              />
-            </div>
-            <p class="caption">
-              Constructive when φ≈0, destructive when φ≈π. Quantum algorithms
-              use this to amplify “good paths.”
-            </p>
-          </section>
+        <section data-transition="fade">
+          <h2>From circuits to algorithms</h2>
+          <p class="subtitle">
+            We will use quantum states + gates to uncover hidden structure.
+          </p>
+          <ul>
+            <li class="fragment">Structure: hidden periods and phases</li>
+            <li class="fragment">Tool: Quantum Fourier Transform (QFT)</li>
+            <li class="fragment">Target: breaking RSA via factoring</li>
+          </ul>
+          <aside class="notes">
+            Simple bridge slide so the audience knows Shor is next, and what to
+            watch for.
+          </aside>
         </section>
 
         <!-- ==========================================================
-             5️⃣  SHOR’S ALGORITHM
+             6️⃣  SHOR’S ALGORITHM (+ RSA PRIMER)
              ========================================================== -->
         <section>
           <!-- RSA story -->
@@ -226,9 +279,13 @@
               <button id="rsa-fac">Try to factor N</button>
             </div>
             <p class="caption">
-              This “one-wayness” is what Shor’s algorithm breaks by finding a
+              This one-wayness is what Shor’s algorithm breaks by finding a
               hidden period.
             </p>
+            <aside class="notes">
+              Remind: public key uses N=pq. Security relies on factoring being
+              hard classically.
+            </aside>
           </section>
 
           <!-- Periodic function -->
@@ -236,9 +293,13 @@
             <h2>Periodic function f(x)=a^x mod N</h2>
             <canvas id="period-canvas" width="800" height="260"></canvas>
             <div style="margin-top: 8px">
-              <label>a: </label
-              ><input id="a-slider" type="range" min="2" max="10" value="3" />
+              <label>a: </label>
+              <input id="a-slider" type="range" min="2" max="10" value="3" />
             </div>
+            <aside class="notes">
+              The period r of f is the secret structure. If r is even and
+              a^(r/2)≠−1 mod N, gcd gives factors.
+            </aside>
           </section>
 
           <!-- QFT peaks -->
@@ -256,6 +317,10 @@
               />
             </div>
             <p class="caption">QFT reveals sharp peaks at multiples of 1/r.</p>
+            <aside class="notes">
+              Key insight: interference concentrates probability at Fourier
+              modes tied to r.
+            </aside>
           </section>
 
           <!-- Continued fractions -->
@@ -266,16 +331,16 @@
             >
               <div>
                 <div class="caption">Measured value y/N (toy example):</div>
-                <label>y: </label
-                ><input
+                <label>y: </label>
+                <input
                   id="cf-y"
                   type="number"
                   min="1"
                   value="21"
                   style="width: 90px"
                 />
-                <label>N: </label
-                ><input
+                <label>N: </label>
+                <input
                   id="cf-N"
                   type="number"
                   min="2"
@@ -290,6 +355,10 @@
                 <ol id="cf-list" style="max-height: 160px; overflow: auto"></ol>
               </div>
             </div>
+            <aside class="notes">
+              Briefly say: rational approximation turns frequency info into an
+              integer period.
+            </aside>
           </section>
 
           <!-- GCD demo -->
@@ -299,6 +368,9 @@
               <button id="gcd-demo">Compute factors</button>
               <div id="gcd-output"></div>
             </div>
+            <aside class="notes">
+              If r is even and a^(r/2)≠−1 mod N, compute gcd(a^(r/2)±1, N).
+            </aside>
           </section>
 
           <!-- Pseudocode -->
@@ -315,11 +387,15 @@ repeat:
             <p class="caption">
               Quantum speedup sits inside the period-finding routine.
             </p>
+            <aside class="notes">
+              Land the full loop: classical pre-check, quantum r-finding,
+              classical post-processing.
+            </aside>
           </section>
         </section>
 
         <!-- ==========================================================
-             6️⃣  REALITY & FUTURE
+             7️⃣  REALITY & FUTURE
              ========================================================== -->
         <section>
           <section data-auto-animate>
@@ -334,40 +410,53 @@ repeat:
               <button id="ecc-reset">Reset</button>
             </div>
             <p id="ecc-msg" class="caption">Encoded logical 0 as (+1,+1,+1).</p>
+            <aside class="notes">
+              Show fragility and the high-level idea of redundancy.
+            </aside>
           </section>
 
           <section>
-            <h2>Reality check & future</h2>
+            <h2>Reality check and future</h2>
             <ul>
               <li class="fragment">Qubits are fragile (noise, decoherence)</li>
               <li class="fragment">Error correction and scaling are hard</li>
-              <li class="fragment">But progress is steady and accelerating</li>
+              <li class="fragment">But progress is steady</li>
             </ul>
             <p class="fragment">
-              Post-quantum cryptography is already in the works.
+              Post-quantum cryptography is already being developed.
             </p>
+            <aside class="notes">
+              Balance hype with honesty. Close with where the field is going.
+            </aside>
           </section>
         </section>
 
         <!-- ==========================================================
-             7️⃣  TAKEAWAYS & Q&A
+             8️⃣  TAKEAWAYS & Q&A
              ========================================================== -->
         <section>
           <h2>Takeaways</h2>
           <ul>
             <li class="fragment">
-              Classical computers hit limits on certain tasks
+              Classical computers hit limits on some tasks
             </li>
             <li class="fragment">
               Quantum = superposition + interference + entanglement
             </li>
             <li class="fragment">Shor: factor via period r revealed by QFT</li>
           </ul>
+          <aside class="notes">
+            Summarize in three bullets. Then questions.
+          </aside>
         </section>
 
         <section>
           <h2>Questions?</h2>
           <p class="caption">Thank you for your attention!</p>
+          <aside class="notes">
+            Invite questions on the QFT intuition and the classical
+            post-processing.
+          </aside>
         </section>
       </div>
     </div>
