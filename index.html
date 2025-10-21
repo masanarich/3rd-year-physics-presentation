@@ -5,61 +5,55 @@
     <title>Quantum Computing — 3rd Year Presentation</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Reveal core styles -->
+    <!-- Reveal.js core styles -->
     <link rel="stylesheet" href="https://unpkg.com/reveal.js/dist/reveal.css" />
-    <!-- Base dark theme (we’ll override with theme.css) -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/reveal.js/dist/theme/black.css"
       id="reveal-theme"
     />
-    <!-- Code highlight theme -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/reveal.js/plugin/highlight/monokai.css"
     />
-    Your custom tweaks
-    <link rel="stylesheet" href=".theme.css" />
+
+    <!-- Custom theme -->
+    <link rel="stylesheet" href="theme.css" />
   </head>
 
   <body>
     <div class="reveal">
       <div class="slides">
-        <!-- H1 — Title -->
+        <!-- ==========================================================
+             1️⃣  INTRODUCTION
+             ========================================================== -->
         <section data-transition="fade">
           <h1 class="accent">Quantum Computing</h1>
-          <h3>What, Why, and a Tour of Shor’s Algorithm</h3>
+          <h3>What, Why and a Tour of Shor’s Algorithm</h3>
           <p style="margin-top: 1.2rem">
             <small>Faranani Maduwa — 3rd Year Physics Research</small>
           </p>
           <aside class="notes">
-            12 minutes total. Keep slides minimal; tell the story out loud.
+            12 minutes total + 3 for questions. Keep it visual and story-driven.
           </aside>
         </section>
 
-        <!-- H2 — Introduction (vertical stack) -->
+        <!-- ==========================================================
+             2️⃣  WHAT IS COMPUTING
+             ========================================================== -->
         <section>
-          <!-- V2A -->
           <section data-auto-animate>
             <h2>What is computing?</h2>
             <p class="subtitle">
               Turning <span class="accent">inputs</span> into
               <span class="accent">useful outputs</span> via rules (algorithms).
             </p>
-            <div class="diagram" data-id="flow">
-              <div class="chip">Inputs</div>
-              <div class="arrow">⟶</div>
-              <div class="chip accent-border">Algorithm</div>
-              <div class="arrow">⟶</div>
-              <div class="chip">Outputs</div>
+            <canvas id="pipeline-canvas" width="700" height="260"></canvas>
+            <div style="text-align: center; margin-top: 10px">
+              <button id="pipeline-toggle">Toggle Classical / Quantum</button>
             </div>
-            <aside class="notes">
-              Simple mental model: input → algorithm → output. Classical
-              computers do this with bits and logic gates.
-            </aside>
           </section>
 
-          <!-- V2B -->
           <section data-auto-animate>
             <h2>Where classical hits limits</h2>
             <ul>
@@ -68,65 +62,121 @@
               <li class="fragment">Combinatorial explosions</li>
             </ul>
             <p class="fragment fade-up">
-              Nature is quantum… maybe our computers should be too.
+              Nature is quantum … maybe our computers should be too.
             </p>
           </section>
         </section>
 
-        <!-- H3 — What is a quantum computer? (vertical stack) -->
+        <!-- ==========================================================
+             3️⃣  WHAT IS A QUANTUM COMPUTER
+             ========================================================== -->
         <section>
-          <!-- V3A -->
+          <!-- Bit vs Qubit -->
           <section data-auto-animate>
             <h2>Bit vs Qubit</h2>
-            <div class="twocol">
-              <div>
-                <h4>Classical bit</h4>
-                <p>Either 0 or 1</p>
+            <div class="bitqubit">
+              <div class="cell">
+                <div class="label">Bit</div>
+                <div id="bit-box" class="bit">0</div>
+                <button onclick="toggleBit()">Flip bit</button>
               </div>
-              <div>
-                <h4>Qubit</h4>
-                <p>
-                  Superposition: \( \,|\psi\rangle = \alpha|0\rangle +
-                  \beta|1\rangle,\; |\alpha|^2+|\beta|^2=1 \)
-                </p>
+              <div class="cell">
+                <div class="label">Qubit</div>
+                <div id="qubit-box" class="qubit">|0⟩</div>
+                <button onclick="cycleQubit()">Cycle state</button>
               </div>
             </div>
             <p class="caption">
-              State lives on the Bloch sphere (we’ll use this visually, not
-              algebraically).
+              Qubits can be |0⟩, |1⟩ or any superposition in between.
             </p>
           </section>
 
-          <!-- V3B -->
+          <!-- Bloch sphere -->
           <section data-auto-animate>
-            <h2>Key ingredients</h2>
-            <ul>
-              <li class="fragment">
-                <b>Superposition</b> — explore many possibilities at once
-              </li>
-              <li class="fragment">
-                <b>Interference</b> — reinforce right answers, cancel wrong ones
-              </li>
-              <li class="fragment">
-                <b>Entanglement</b> — strong correlations across qubits
-              </li>
-            </ul>
+            <h2>Visualizing a qubit</h2>
+            <div
+              id="bloch-container"
+              style="width: 500px; height: 400px; margin: auto"
+            ></div>
+            <div style="text-align: center; margin-top: 10px">
+              <button onclick="setState('zero')">|0⟩</button>
+              <button onclick="setState('one')">|1⟩</button>
+              <button onclick="setState('super')">Superposition</button>
+            </div>
+            <p class="caption">
+              The Bloch sphere shows how any single qubit state can be
+              represented geometrically.
+            </p>
           </section>
 
-          <!-- V3C -->
+          <!-- Entanglement -->
           <section data-auto-animate>
-            <h2>Quantum circuits</h2>
-            <p>Sequences of gates that transform qubit states.</p>
-            <img
-              src="./img/mini-circuit.png"
-              alt="Quantum circuit"
-              style="max-height: 360px; border-radius: 12px"
-            />
-            <p class="caption">Think: programmable interference patterns.</p>
+            <h2>Entanglement = correlations</h2>
+            <canvas id="entangle-canvas" width="720" height="260"></canvas>
+            <div style="text-align: center; margin-top: 10px">
+              <button id="btn-separable">Separable</button>
+              <button id="btn-entangle">Entangle</button>
+              <button id="btn-measureZ">Measure Z</button>
+              <button id="btn-reset-ent">Reset</button>
+            </div>
+            <p class="caption">
+              Random individually but
+              <span class="accent">correlated together</span> when entangled.
+            </p>
+          </section>
+
+          <!-- Bell state -->
+          <section data-auto-animate>
+            <h2>H + CNOT → Bell state</h2>
+            <svg
+              id="bell-circuit"
+              width="800"
+              height="220"
+              style="max-width: 100%"
+            >
+              <line x1="60" y1="70" x2="740" y2="70" class="qwire" />
+              <line x1="60" y1="150" x2="740" y2="150" class="qwire" />
+              <rect
+                id="gateH"
+                class="gate"
+                x="200"
+                y="50"
+                width="60"
+                height="40"
+                opacity="0.35"
+              />
+              <text x="230" y="77" class="stateLabel">H</text>
+              <rect
+                id="gateCNOT"
+                class="gate"
+                x="380"
+                y="50"
+                width="80"
+                height="40"
+                opacity="0.35"
+              />
+              <circle cx="420" cy="70" r="6" class="ctrl" />
+              <line x1="420" y1="70" x2="420" y2="150" class="qwire" />
+              <circle cx="420" cy="150" r="12" fill="none" class="target" />
+              <line x1="408" y1="150" x2="432" y2="150" class="qwire" />
+              <text x="620" y="70" class="stateLabel">|ψ⟩</text>
+              <text id="bell-state-label" x="620" y="150" class="stateLabel">
+                |00⟩
+              </text>
+            </svg>
+            <div style="text-align: center; margin-top: 10px">
+              <button id="bell-prev">Back</button>
+              <button id="bell-next">Next</button>
+            </div>
+            <p class="caption">
+              Step through: |00⟩ → H → CNOT → (|00⟩+|11⟩)/√2.
+            </p>
           </section>
         </section>
 
-        <!-- H4 — Why quantum computers are exciting -->
+        <!-- ==========================================================
+             4️⃣  WHY QUANTUM IS EXCITING
+             ========================================================== -->
         <section>
           <section>
             <h2>Why be excited?</h2>
@@ -135,148 +185,200 @@
                 Exponential state spaces (powerful representations)
               </li>
               <li class="fragment">
-                Speedups on specific problems (e.g., factoring, search,
-                simulation)
+                Speedups on specific problems (factoring, search, simulation)
               </li>
               <li class="fragment">New ways of modeling physical systems</li>
             </ul>
           </section>
+
+          <!-- Interference -->
+          <section data-auto-animate>
+            <h2>Interference = selection by phase</h2>
+            <canvas id="interf-canvas" width="900" height="230"></canvas>
+            <div style="margin-top: 10px">
+              <label>Phase φ: <span id="interf-label">1.00π</span></label>
+              <input
+                id="interf-phase"
+                type="range"
+                min="0"
+                max="2"
+                step="0.01"
+                value="1.00"
+              />
+            </div>
+            <p class="caption">
+              Constructive when φ≈0, destructive when φ≈π. Quantum algorithms
+              use this to amplify “good paths.”
+            </p>
+          </section>
         </section>
 
-        <!-- H5 — Shor’s Algorithm (focus on r) -->
+        <!-- ==========================================================
+             5️⃣  SHOR’S ALGORITHM
+             ========================================================== -->
         <section>
-          <!-- V5A -->
+          <!-- RSA story -->
           <section data-auto-animate>
-            <h2>RSA in 60 seconds</h2>
-            <p>
-              Security relies on: <span class="accent">easy to multiply</span>,
-              <em>hard to factor</em>.
+            <h2>RSA: easy multiply, hard to factor</h2>
+            <div id="rsa-scene" style="text-align: center">
+              <div id="rsa-output" style="margin-bottom: 10px"></div>
+              <button id="rsa-mul">Multiply p and q</button>
+              <button id="rsa-fac">Try to factor N</button>
+            </div>
+            <p class="caption">
+              This “one-wayness” is what Shor’s algorithm breaks by finding a
+              hidden period.
             </p>
-            <img
-              src="./img/rsa-diagram.png"
-              alt="RSA diagram"
-              style="max-height: 360px; border-radius: 12px"
-            />
-            <aside class="notes">
-              Public key uses N = p·q. If you can factor N, RSA breaks.
-            </aside>
           </section>
 
-          <!-- V5B -->
+          <!-- Periodic function -->
           <section data-auto-animate>
-            <h2>Shor’s big idea</h2>
-            <p class="subtitle">
-              Don’t factor directly.
-              <span class="accent">Find a period</span> instead.
-            </p>
-            <p>
-              \( f(x)=a^x \bmod N \) is periodic with some smallest period \( r
-              \).
-            </p>
-            <img
-              src="./img/period-plot.png"
-              alt="Periodic function plot"
-              style="max-height: 360px; border-radius: 12px"
-            />
+            <h2>Periodic function f(x)=a^x mod N</h2>
+            <canvas id="period-canvas" width="800" height="260"></canvas>
+            <div style="margin-top: 8px">
+              <label>a: </label
+              ><input id="a-slider" type="range" min="2" max="10" value="3" />
+            </div>
           </section>
 
-          <!-- V5C -->
+          <!-- QFT peaks -->
           <section data-auto-animate>
-            <h2>Focus on <span class="accent">r</span></h2>
-            <ul>
-              <li class="fragment">Prepare a superposition over many \(x\)</li>
-              <li class="fragment">
-                Compute \( a^x \bmod N \) in a second register
-              </li>
-              <li class="fragment">
-                Apply QFT → peaks at multiples of \(1/r\)
-              </li>
-              <li class="fragment">
-                Measure → infer \( r \) (continued fractions)
-              </li>
-            </ul>
-            <img
-              src="./img/qft-peaks.png"
-              alt="QFT peaks"
-              style="max-height: 300px; border-radius: 12px"
-            />
+            <h2>Quantum Fourier Transform (QFT)</h2>
+            <canvas id="qft-canvas" width="800" height="260"></canvas>
+            <div style="margin-top: 8px">
+              <label>Period r: <span id="r-label">5</span></label>
+              <input
+                type="range"
+                min="3"
+                max="40"
+                value="5"
+                oninput="updateR(this.value)"
+              />
+            </div>
+            <p class="caption">QFT reveals sharp peaks at multiples of 1/r.</p>
           </section>
 
-          <!-- V5D -->
+          <!-- Continued fractions -->
+          <section data-auto-animate>
+            <h2>From a phase to the period r</h2>
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
+            >
+              <div>
+                <div class="caption">Measured value y/N (toy example):</div>
+                <label>y: </label
+                ><input
+                  id="cf-y"
+                  type="number"
+                  min="1"
+                  value="21"
+                  style="width: 90px"
+                />
+                <label>N: </label
+                ><input
+                  id="cf-N"
+                  type="number"
+                  min="2"
+                  value="128"
+                  style="width: 90px"
+                />
+                <p class="caption" style="margin-top: 8px">
+                  Approximate y/N using continued fractions → denominator ≈ r.
+                </p>
+              </div>
+              <div>
+                <ol id="cf-list" style="max-height: 160px; overflow: auto"></ol>
+              </div>
+            </div>
+          </section>
+
+          <!-- GCD demo -->
           <section data-auto-animate>
             <h2>From r to factors</h2>
-            <p>
-              If \( r \) is even and \( a^{r/2} \not\equiv -1 \pmod N \), then
-            </p>
-            <p class="big">
-              \(\displaystyle \gcd\!\big(a^{r/2}-1,\,N\big)\ \text{ and }\
-              \gcd\!\big(a^{r/2}+1,\,N\big) \)
-            </p>
-            <p>are non-trivial factors of \(N\).</p>
+            <div style="text-align: center">
+              <button id="gcd-demo">Compute factors</button>
+              <div id="gcd-output"></div>
+            </div>
           </section>
 
-          <!-- V5E — Pseudocode -->
+          <!-- Pseudocode -->
           <section>
             <h2>Shor’s algorithm (concise)</h2>
             <pre><code class="language-text">Input: odd composite N
 repeat:
-  1. Pick a uniformly from {2,...,N−2}
-  2. g ← gcd(a, N); if g &gt; 1 return g
+  1. Choose a ∈ {2,…,N−2}
+  2. g ← gcd(a,N); if g > 1 → factor
   3. r ← QuantumPeriodFinding(f(x)=a^x mod N)
-  4. if r is odd or a^(r/2) ≡ −1 (mod N): continue
-  5. return gcd(a^(r/2)−1, N) or gcd(a^(r/2)+1, N)</code></pre>
+  4. if r odd or a^(r/2) ≡ −1 (mod N): continue
+  5. return gcd(a^(r/2)±1, N)
+</code></pre>
             <p class="caption">
-              The quantum speedup sits inside the period-finding subroutine.
+              Quantum speedup sits inside the period-finding routine.
             </p>
           </section>
         </section>
 
-        <!-- H6 — Reality & future -->
+        <!-- ==========================================================
+             6️⃣  REALITY & FUTURE
+             ========================================================== -->
         <section>
+          <section data-auto-animate>
+            <h2>Error correction (teaser)</h2>
+            <div
+              id="ecc-scene"
+              style="text-align: center; margin-bottom: 10px"
+            ></div>
+            <div style="text-align: center">
+              <button id="ecc-noise">Apply noise</button>
+              <button id="ecc-decode">Majority decode</button>
+              <button id="ecc-reset">Reset</button>
+            </div>
+            <p id="ecc-msg" class="caption">Encoded logical 0 as (+1,+1,+1).</p>
+          </section>
+
           <section>
-            <h2>Reality check</h2>
+            <h2>Reality check & future</h2>
             <ul>
-              <li class="fragment">Noisy qubits, decoherence</li>
-              <li class="fragment">Scaling + error correction is hard</li>
-              <li class="fragment">But progress is steady</li>
+              <li class="fragment">Qubits are fragile (noise, decoherence)</li>
+              <li class="fragment">Error correction and scaling are hard</li>
+              <li class="fragment">But progress is steady and accelerating</li>
             </ul>
-            <p class="fragment">Post-quantum crypto is being standardized.</p>
+            <p class="fragment">
+              Post-quantum cryptography is already in the works.
+            </p>
           </section>
         </section>
 
-        <!-- H7 — Takeaways & Q&A -->
+        <!-- ==========================================================
+             7️⃣  TAKEAWAYS & Q&A
+             ========================================================== -->
         <section>
-          <section>
-            <h2>Takeaways</h2>
-            <ul>
-              <li class="fragment">
-                Computers transform inputs to outputs; classical has limits
-              </li>
-              <li class="fragment">
-                Quantum = superposition + interference + entanglement
-              </li>
-              <li class="fragment">
-                Shor: factors via <span class="accent">period r</span> + QFT
-              </li>
-            </ul>
-          </section>
-          <section>
-            <h2>Questions?</h2>
-            <p class="caption">Backup slides available if needed.</p>
-          </section>
+          <h2>Takeaways</h2>
+          <ul>
+            <li class="fragment">
+              Classical computers hit limits on certain tasks
+            </li>
+            <li class="fragment">
+              Quantum = superposition + interference + entanglement
+            </li>
+            <li class="fragment">Shor: factor via period r revealed by QFT</li>
+          </ul>
         </section>
 
-        <!-- Optional hidden backup slides go here -->
+        <section>
+          <h2>Questions?</h2>
+          <p class="caption">Thank you for your attention!</p>
+        </section>
       </div>
     </div>
 
-    <!-- Reveal core + plugins -->
+    <!-- Reveal.js core + plugins -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
     <script src="https://unpkg.com/reveal.js/dist/reveal.js"></script>
     <script src="https://unpkg.com/reveal.js/plugin/notes/notes.js"></script>
     <script src="https://unpkg.com/reveal.js/plugin/highlight/highlight.js"></script>
     <script src="https://unpkg.com/reveal.js/plugin/math/math.js"></script>
 
-    <!-- MathJax 3 (let Reveal Math plugin load it) -->
     <script>
       const deck = new Reveal({
         hash: true,
@@ -286,7 +388,7 @@ repeat:
         controlsTutorial: false,
         center: true,
         width: 1280,
-        height: 720, // 16:9
+        height: 720,
         plugins: [RevealNotes, RevealHighlight, RevealMath.MathJax3],
         math: {
           mathjax:
@@ -302,6 +404,7 @@ repeat:
       deck.initialize();
     </script>
 
-    <script src="./custom.js"></script>
+    <!-- Your interactive animations -->
+    <script src="custom.js"></script>
   </body>
 </html>
