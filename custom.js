@@ -373,9 +373,426 @@ function initGCDFromR() {
 }
 initGCDFromR();
 
+
+
+
 /* ==========================================================
    (PHASE 2 & 3 placeholders go below later)
    ========================================================== */
+
+
+   /*----------------------------------------------------------- 
+  7️⃣  ENTANGLEMENT CORRELATION DEMO (fit + colors + responsive)
+  -----------------------------------------------------------*/
+function initEntanglementDemo() {
+  const canvas = document.getElementById("entangle-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
+  // ---- Color themes ----
+  const COLORS = {
+    sepFill:  "rgba(200,210,220,0.10)",
+    sepEdge:  "rgba(255,255,255,0.55)",
+    entFill:  "rgba(120,250,245,0.15)",
+    entEdge:  "rgba(120,250,245,0.95)",
+    text:     "rgba(255,255,255,0.95)",
+    subtext:  "rgba(155,232,255,0.90)",
+    panelBg:  "rgba(255,255,255,0.06)",
+    panelEdge:"rgba(255,255,255,0.10)",
+    link:     "#57e5e0",
+    linkDash: "rgba(159,249,255,0.9)"
+  };
+
+  // ---- Responsive + HiDPI scaling (uses CSS size) ----
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const rect = canvas.getBoundingClientRect();
+    const cssW = (rect.width  || canvas.width  || 720);
+    const cssH = (rect.height || canvas.height || 260);
+    canvas.width  = Math.floor(cssW * dpr);
+    canvas.height = Math.floor(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  // ---- State ----
+  let entangled = false;
+  let outcomes = [];
+  let corrSum = 0, corrCount = 0;
+  let lastA = null, lastB = null;
+  let t0 = performance.now();
+  const pulses = [];
+
+  // ---- Layout computed from current canvas size ----
+  function layout() {
+    const rect = canvas.getBoundingClientRect();
+    const W = rect.width  || 720;
+    const H = rect.height || 260;
+
+    let R = Math.min(W, H) * 0.16;
+    R = Math.max(40, Math.min(64, R));
+
+    const sideMargin = R + 24;
+    const ax = Math.max(sideMargin, W * 0.28);
+    const bx = Math.min(W - sideMargin, W * 0.72);
+
+    const topMargin = 40, bottomMargin = 64;
+    let centerY = Math.round(H * 0.46);
+    centerY = Math.max(topMargin + R, Math.min(centerY, H - (bottomMargin + R)));
+
+    const logX = 24;
+    let logY = Math.round(H * 0.68);
+    logY = Math.min(logY, H - 28);
+
+    return { W, H, ax, bx, centerY, R, logX, logY, margin: sideMargin };
+  }
+
+  // ---- Helpers ----
+  function roundedPanel(x, y, w, h, r, fill, stroke, alpha=1) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+    ctx.restore();
+  }
+
+  function drawQubit(x, y, R, value, ent) {
+    const fill = ent ? COLORS.entFill : COLORS.sepFill;
+    const edge = ent ? COLORS.entEdge : COLORS.sepEdge;
+
+    const g = ctx.createRadialGradient(x, y, 8, x, y, R);
+    g.addColorStop(0, fill);
+    g.addColorStop(1, "rgba(180,220,255,0.04)");
+    ctx.fillStyle = g;
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+
+    ctx.font = "600 22px ui-sans-serif, system-ui, Segoe UI";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = COLORS.text;
+    const label = value === null ? "?" : (value > 0 ? "+1" : "−1");
+    ctx.fillText(label, x, y);
+
+    ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, monospace";
+    ctx.fillStyle = COLORS.subtext;
+    ctx.fillText("σz", x, y - R - 12);
+  }
+
+  function drawLink(ax, ay, bx, by, timeMs) {
+    const pulseW = 3 + 3 * Math.sin((timeMs % 2000) / 2000 * Math.PI * 2);
+
+    ctx.save();
+    ctx.shadowColor = "rgba(87,229,224,0.9)";
+    ctx.shadowBlur = 10;
+    ctx.lineWidth = pulseW;
+    ctx.strokeStyle = COLORS.link;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.restore();
+
+    ctx.setLineDash([10, 10]);
+    ctx.lineDashOffset = -timeMs * 0.06;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = COLORS.linkDash;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.font = "600 14px ui-sans-serif, system-ui";
+    ctx.fillStyle = COLORS.subtext;
+    const midX = (ax + bx) / 2, midY = (ay + by) / 2 + 18;
+    ctx.textAlign = "center";
+    ctx.fillText("Entangled (|Φ⁺⟩)", midX, midY);
+  }
+
+  function addPulse(x, y) { pulses.push({ x, y, t: 0 }); }
+  function drawPulses(dt) {
+    for (let i = pulses.length - 1; i >= 0; i--) {
+      const p = pulses[i];
+      p.t += dt;
+      const r = 60 + 120 * p.t;
+      const a = Math.max(0, 0.35 * (1 - p.t));
+      ctx.strokeStyle = `rgba(159, 249, 255, ${a})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI*2); ctx.stroke();
+      if (p.t > 1) pulses.splice(i, 1);
+    }
+  }
+
+  function drawOutcomesPanel(L) {
+    const w = Math.min(420, L.W - 48), h = 128;
+    roundedPanel(16, L.logY - 22, w, h, 12, COLORS.panelBg, COLORS.panelEdge, 1);
+
+    ctx.font = "700 14px ui-sans-serif, system-ui";
+    ctx.textAlign = "left";
+    ctx.fillStyle = COLORS.text;
+    ctx.fillText("Runs (Z-basis):", 28, L.logY);
+
+    ctx.font = "13px ui-monospace, SFMono-Regular, Menlo, monospace";
+    const corr = corrCount ? (corrSum / corrCount).toFixed(2) : "—";
+    ctx.fillStyle = COLORS.subtext;
+    ctx.fillText(`⟨σz⊗σz⟩ ≈ ${corr}`, 28, L.logY + 20);
+
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    outcomes.slice(-6).forEach((s, i) => ctx.fillText(s, 28, L.logY + 40 + 16*i));
+  }
+
+  // ---- Measurement in Z ----
+  function measureZ() {
+    let a, b;
+    if (entangled) { a = Math.random() < 0.5 ? +1 : -1; b = a; }
+    else { a = Math.random() < 0.5 ? +1 : -1; b = Math.random() < 0.5 ? +1 : -1; }
+    lastA = a; lastB = b;
+    corrSum += a * b; corrCount += 1;
+    outcomes.push(`A: ${a>0?"+1":"-1"}   B: ${b>0?"+1":"-1"}   ${entangled?"(corr)":"(indep)"}`);
+
+    const L = layout();
+    addPulse(L.ax, L.centerY); addPulse(L.bx, L.centerY);
+  }
+
+  function hardReset(){ outcomes=[]; corrSum=0; corrCount=0; lastA=null; lastB=null; }
+  function softReset(){ lastA=null; lastB=null; }
+
+  // ---- Render loop ----
+  function render(now) {
+    const L = layout();
+    const dt = Math.min(0.05, (now - t0) / 1000); t0 = now;
+
+    ctx.clearRect(0, 0, L.W, L.H);
+    roundedPanel(8, 8, L.W - 16, L.H - 16, 20, "rgba(0,0,0,0.18)", null, 1);
+
+    // state title
+    ctx.font = "600 14px ui-sans-serif, system-ui";
+    ctx.textAlign = "center";
+    ctx.fillStyle = entangled ? COLORS.subtext : "rgba(255,255,255,0.75)";
+    const stateText = entangled
+      ? "State: |Φ⁺⟩ = (|00⟩ + |11⟩)/√2  →  perfectly correlated in Z"
+      : "State: separable (independent)  →  no enforced correlation";
+    ctx.fillText(stateText, L.W/2, 24);
+
+    // qubits (tint changes with entangled flag)
+    drawQubit(L.ax, L.centerY, L.R, lastA, entangled);
+    drawQubit(L.bx, L.centerY, L.R, lastB, entangled);
+
+    // animated link if entangled
+    if (entangled) drawLink(L.ax + L.R, L.centerY, L.bx - L.R, L.centerY, now);
+
+    drawPulses(dt);
+    drawOutcomesPanel(L);
+
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+
+  // ---- Buttons (IDs unchanged) ----
+  const btnEnt = document.getElementById("btn-entangle");
+  const btnSep = document.getElementById("btn-separable");
+  const btnMeas = document.getElementById("btn-measureZ");
+  const btnReset = document.getElementById("btn-reset-ent");
+
+  if (btnEnt)  btnEnt.onclick  = () => { entangled = true;  softReset(); };
+  if (btnSep)  btnSep.onclick  = () => { entangled = false; softReset(); };
+  if (btnMeas) btnMeas.onclick = () => measureZ();
+  if (btnReset)btnReset.onclick = () => { hardReset(); softReset(); };
+}
+initEntanglementDemo();
+
+
+
+/*----------------------------------------------------------- 
+  8️⃣  H + CNOT → BELL STATE  (animated, clear flow)
+  -----------------------------------------------------------*/
+function initBellCircuit() {
+  const svg = document.getElementById("bell-circuit");
+  if (!svg) return;
+
+  // Existing SVG bits
+  const gateH    = document.getElementById("gateH");
+  const gateCNOT = document.getElementById("gateCNOT");
+  const lblRight = document.getElementById("bell-state-label"); // we reposition this near CNOT
+
+  const btnNext = document.getElementById("bell-next");
+  const btnPrev = document.getElementById("bell-prev");
+
+  // Geometry from your SVG (tuned to your coordinates)
+  const x0   = 90;                   // start x
+  const xHc  = 230;                  // H gate center (200 + 60/2)
+  const xMid = 300;                  // midpoint between H and CNOT
+  const xC   = 420;                  // CNOT column
+  const xOut = 470;                  // output label just to the right of CNOT
+
+  const yTop = 70;
+  const yBot = 150;
+
+  // Style
+  const ACCENT = "#57e5e0";
+  const EDGE   = "rgba(255,255,255,0.7)";
+  const FILL   = "rgba(255,255,255,0.06)";
+  const TEXT   = "#ffffff";
+
+  // Utility: token factory (rounded chip)
+  function makeToken(x, y, text) {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x - 22);
+    rect.setAttribute("y", y - 14);
+    rect.setAttribute("width", 44);
+    rect.setAttribute("height", 28);
+    rect.setAttribute("rx", 14);
+    rect.setAttribute("fill", FILL);
+    rect.setAttribute("stroke", EDGE);
+    rect.setAttribute("stroke-width", "2");
+
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t.setAttribute("x", x);
+    t.setAttribute("y", y + 6);
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("font-family", "ui-sans-serif, Segoe UI, sans-serif");
+    t.setAttribute("font-size", "16");
+    t.setAttribute("fill", TEXT);
+    t.textContent = text;
+
+    g.appendChild(rect); g.appendChild(t);
+    svg.appendChild(g);
+    return { rect, t };
+  }
+  function setTokenPos(tok, x, y) {
+    tok.rect.setAttribute("x", x - 22);
+    tok.rect.setAttribute("y", y - 14);
+    tok.t.setAttribute("x", x);
+    tok.t.setAttribute("y", y + 6);
+  }
+  function setTokenText(tok, txt, glow=false) {
+    tok.t.textContent = txt;
+    tok.rect.setAttribute("stroke", glow ? ACCENT : EDGE);
+    tok.rect.setAttribute("fill", glow ? "rgba(120,250,245,0.12)" : FILL);
+  }
+
+  // Easing & tween
+  const ease = u => (u < 0.5 ? 2*u*u : -1 + (4 - 2*u)*u); // easeInOutQuad
+  function tweenPos(tok, x0, y0, x1, y1, ms=450) {
+    return new Promise(res => {
+      const t0 = performance.now();
+      (function step(t){
+        const u = Math.min(1, (t - t0)/ms);
+        const e = ease(u);
+        setTokenPos(tok, x0 + (x1-x0)*e, y0 + (y1-y0)*e);
+        if (u < 1) requestAnimationFrame(step); else res();
+      })(performance.now());
+    });
+  }
+
+  // Visual emphasis of the CNOT vertical coupling
+  function flashVertical() {
+    const v = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    v.setAttribute("x1", xC); v.setAttribute("x2", xC);
+    v.setAttribute("y1", yTop); v.setAttribute("y2", yBot);
+    v.setAttribute("stroke", ACCENT); v.setAttribute("stroke-width", "3");
+    v.setAttribute("stroke-linecap", "round");
+    svg.appendChild(v);
+    let a = 1;
+    (function fade(){
+      a -= 0.04; v.setAttribute("opacity", String(Math.max(0,a)));
+      if (a > 0) requestAnimationFrame(fade); else svg.removeChild(v);
+    })();
+  }
+
+  // Tokens
+  const tokTop = makeToken(x0, yTop, "|0⟩");
+  const tokBot = makeToken(x0, yBot, "|0⟩");
+
+  // Gate highlighting + dim far-right |ψ⟩ after CNOT
+  function highlight(step) {
+    if (gateH)    gateH.setAttribute("opacity", step === 1 ? "1" : "0.35");
+    if (gateCNOT) gateCNOT.setAttribute("opacity", step === 2 ? "1" : "0.35");
+    const psi = Array.from(svg.querySelectorAll("text")).find(t => t.textContent.trim() === "|ψ⟩");
+    if (psi) psi.setAttribute("opacity", step === 2 ? "0.25" : "1");
+  }
+
+  // Output label right after CNOT (between wires)
+  function setOutputLabel(txt) {
+    if (!lblRight) return;
+    lblRight.setAttribute("x", xOut);
+    lblRight.setAttribute("y", (yTop + yBot) / 2 + 6);
+    lblRight.setAttribute("text-anchor", "start");
+    lblRight.textContent = txt;
+  }
+
+  // Steps
+  async function toStep0() {
+    highlight(0);
+    setTokenText(tokTop, "|0⟩"); setTokenText(tokBot, "|0⟩");
+    setTokenPos(tokTop, x0, yTop); setTokenPos(tokBot, x0, yBot);
+    setOutputLabel("|00⟩");
+  }
+
+  // Top qubit enters H → |+⟩, bottom stays |0⟩
+  async function toStep1() {
+    await toStep0();
+    highlight(1);
+    await tweenPos(tokTop, x0, yTop, xHc - 6, yTop, 420);  // into H
+    setTokenText(tokTop, "|+⟩", true);
+    await tweenPos(tokTop, xHc - 6, yTop, xMid, yTop, 360); // out of H
+    setOutputLabel("|+0⟩ = (|00⟩ + |10⟩)/√2");
+  }
+
+  // Both qubits go to CNOT; show interaction; show Bell state near the gate
+  async function toStep2() {
+    await toStep1();
+    highlight(2);
+
+    // Move both tokens horizontally to the CNOT column
+    await Promise.all([
+      tweenPos(tokTop, xMid, yTop, xC - 10, yTop, 420),
+      tweenPos(tokBot, x0,  yBot, xC - 10, yBot, 500)
+    ]);
+
+    // Flash the vertical wire to indicate the two-qubit operation
+    flashVertical();
+
+    // Tiny tick on each token (no vertical hop) to suggest “action”
+    await Promise.all([
+      tweenPos(tokTop, xC - 10, yTop, xC - 4,  yTop, 140),
+      tweenPos(tokBot, xC - 10, yBot, xC - 16, yBot, 140)
+    ]);
+
+    // After CNOT → entangled; show output label right after the gate
+    setTokenText(tokTop, "↯", true);
+    setTokenText(tokBot, "↯", true);
+    setOutputLabel("( |00⟩ + |11⟩ )/√2");
+
+    // Drift a short distance to the right (still near CNOT so the story is clear)
+    await Promise.all([
+      tweenPos(tokTop, xC - 4,  yTop, xOut, yTop, 320),
+      tweenPos(tokBot, xC - 16, yBot, xOut, yBot, 320)
+    ]);
+  }
+
+  // Controller (rebuild deterministically to avoid stale positions)
+  let step = 0;
+  async function goTo(n) {
+    if (n <= 0) { step = 0; await toStep0(); return; }
+    if (n === 1) { step = 1; await toStep1(); return; }
+    if (n >= 2) { step = 2; await toStep2(); return; }
+  }
+
+  if (btnNext) btnNext.onclick = () => goTo(Math.min(2, step + 1));
+  if (btnPrev) btnPrev.onclick = () => goTo(Math.max(0, step - 1));
+
+  // Init
+  toStep0();
+}
+initBellCircuit();
+
 
 /*----------------------------------------------------------- 
   8️⃣  H + CNOT → BELL STATE  (animated, clear UP motion at CNOT)
