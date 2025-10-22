@@ -241,3 +241,31 @@ button:active {
 
 /* Small animations for reveal fragments */
 .fragment.visible { transition: transform 0.4s ease, opacity 0.4s ease; transform: scale(1.02); }
+
+
+/* ============================
+   ENTANGLEMENT DEMO (fit + no clipping)
+   ============================ */
+
+/* Optional wrapper if you add it later; harmless if missing */
+#entangle-card {
+  overflow: visible;        /* never clip the circles */
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Keep the canvas responsive but preserve its HTML aspect (720×260) */
+#entangle-canvas {
+  width: min(100%, 960px);  /* scales down nicely on narrow screens */
+  height: auto;             /* use the intrinsic aspect ratio */
+  display: block;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  transition: box-shadow 0.3s ease;
+}
+/* Optional: disable hover scale so it never “grows” out of frame */
+.reveal section canvas.no-scale:hover {
+  transform: none;
+  box-shadow: var(--accent-glow);
+}

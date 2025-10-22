@@ -102,13 +102,14 @@ window.cycleQubit = () => {
   setTimeout(() => (el.style.transform = "rotateY(0deg)"), 220);
 };
 
-/*-----------------------------------------------------------
-  3️⃣  BLOCH SPHERE  (already scaffolded)
+/*----------------------------------------------------------- 
+  3️⃣  BLOCH SPHERE  (updated for visibility + correct poles)
   -----------------------------------------------------------*/
 function initBlochSphere() {
   const el = document.getElementById("bloch-container");
   if (!el) return;
 
+  // --- Scene / camera / renderer ---
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(
     35,
@@ -118,39 +119,81 @@ function initBlochSphere() {
   );
   camera.position.set(0, 0, 4);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setSize(el.clientWidth, el.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // Darker, slightly bluish background to make the sphere stand out
+  renderer.setClearColor(0x0b0f17, 1);
   el.appendChild(renderer.domElement);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.6);
-  dir.position.set(2, 2, 3);
+  // --- Lights (cooler, higher contrast) ---
+  scene.add(new THREE.AmbientLight(0xcad6ff, 0.35));
+  const hemi = new THREE.HemisphereLight(0x9bc9ff, 0x0a0c10, 0.85);
+  scene.add(hemi);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.75);
+  dir.position.set(2.5, 2, 3.2);
   scene.add(dir);
 
+  // --- Solid sphere (rich color + gentle emissive) ---
   const sphere = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 48, 48),
+    new THREE.SphereGeometry(1, 64, 64),
     new THREE.MeshPhongMaterial({
-      color: 0x0a0f14,
-      transparent: true,
-      opacity: 0.85,
+      color: 0x113a66,      // deep blue
+      emissive: 0x0a2033,   // subtle self-light
+      shininess: 40,
+      specular: 0x9ec9ff
     })
   );
   scene.add(sphere);
 
+  // --- Wireframe (brighter teal and more opaque) ---
   const wire = new THREE.LineSegments(
-    new THREE.WireframeGeometry(new THREE.SphereGeometry(1.001, 16, 12)),
+    new THREE.WireframeGeometry(new THREE.SphereGeometry(1.001, 24, 18)),
     new THREE.LineBasicMaterial({
-      color: 0x29b2b2,
-      opacity: 0.25,
-      transparent: true,
+      color: 0x57e5e0,
+      opacity: 0.55,
+      transparent: true
     })
   );
   scene.add(wire);
 
-  // State vector arrow
+  // --- Equator ring (very visible) ---
+  const equator = new THREE.LineLoop(
+    new THREE.CircleGeometry(1.002, 128),
+    new THREE.LineBasicMaterial({
+      color: 0x9be8ff,
+      linewidth: 2,
+      opacity: 0.85,
+      transparent: true
+    })
+  );
+  equator.rotation.x = Math.PI / 2; // lie in the XZ-plane
+  scene.add(equator);
+
+  // --- Pole markers (small bright caps) ---
+  const poleMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const poleGeo = new THREE.SphereGeometry(0.03, 16, 16);
+  const north = new THREE.Mesh(poleGeo, poleMat);
+  const south = new THREE.Mesh(poleGeo, poleMat);
+  north.position.set(0, 1.0, 0);
+  south.position.set(0, -1.0, 0);
+  scene.add(north, south);
+
+  // --- Subtle rim glow (slightly larger transparent sphere) ---
+  const rim = new THREE.Mesh(
+    new THREE.SphereGeometry(1.04, 64, 64),
+    new THREE.MeshBasicMaterial({
+      color: 0x7fe8ff,
+      transparent: true,
+      opacity: 0.06
+    })
+  );
+  scene.add(rim);
+
+  // --- State vector arrow (white) ---
   const arrowMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const shaft = new THREE.CylinderGeometry(0.012, 0.012, 1.0, 16);
-  const head = new THREE.ConeGeometry(0.06, 0.16, 24);
+  const shaft = new THREE.CylinderGeometry(0.012, 0.012, 1.0, 20);
+  const head = new THREE.ConeGeometry(0.06, 0.16, 28);
   const shaftMesh = new THREE.Mesh(shaft, arrowMat);
   const headMesh = new THREE.Mesh(head, arrowMat);
   const arrow = new THREE.Group();
@@ -160,33 +203,53 @@ function initBlochSphere() {
   arrow.add(headMesh);
   scene.add(arrow);
 
+  // --- Mapping: θ measured from +Y (up), φ around +Y (right-handed)
+  // So: |0> (north) => θ=0  -> v = (0, +1, 0)   (top)
+  //     |1> (south) => θ=π  -> v = (0, -1, 0)   (bottom)
+  //     |+> (super) => θ=π/2, φ=0 -> v = (+1, 0, 0) (right)
   function setArrow(theta, phi) {
     const x = Math.sin(theta) * Math.cos(phi);
-    const y = Math.sin(theta) * Math.sin(phi);
-    const z = Math.cos(theta);
+    const y = Math.cos(theta);
+    const z = Math.sin(theta) * Math.sin(phi);
     const v = new THREE.Vector3(x, y, z).normalize();
+    // rotate arrow from default +Y to v
     arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v);
   }
 
-  let theta = 0,
-    phi = 0;
+  // Default state = |0>
+  let theta = 0, phi = 0;
   setArrow(theta, phi);
 
+  // --- Animate (slow rotation for parallax) ---
   function animate() {
     requestAnimationFrame(animate);
-    sphere.rotation.y += 0.0025;
-    wire.rotation.y += 0.0025;
+    sphere.rotation.y += 0.002;
+    wire.rotation.y += 0.002;
+    equator.rotation.y += 0.002;
+    rim.rotation.y += 0.002;
     renderer.render(scene, camera);
   }
   animate();
 
+  // --- Handle resize ---
+  function onResize() {
+    const { clientWidth, clientHeight } = el;
+    camera.aspect = clientWidth / clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(clientWidth, clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  }
+  window.addEventListener("resize", onResize);
+
+  // --- Public API for your buttons ---
   window.setState = (k) => {
-    if (k === "zero") setArrow(0, 0);
-    if (k === "one") setArrow(Math.PI, 0);
-    if (k === "super") setArrow(Math.PI / 2, 0);
+    if (k === "zero") setArrow(0, 0);                 // |0⟩  (north/top)
+    if (k === "one") setArrow(Math.PI, 0);            // |1⟩  (south/bottom)
+    if (k === "super") setArrow(Math.PI / 2, 0);      // (|0⟩+|1⟩)/√2 along +X
   };
 }
 initBlochSphere();
+
 
 /*-----------------------------------------------------------
   4️⃣  QFT SLIDER (already scaffolded)
@@ -314,146 +377,193 @@ initGCDFromR();
    (PHASE 2 & 3 placeholders go below later)
    ========================================================== */
 
-  /*-----------------------------------------------------------
-  7️⃣  ENTANGLEMENT CORRELATION DEMO
-  -----------------------------------------------------------*/
-function initEntanglementDemo() {
-  const canvas = document.getElementById("entangle-canvas");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-
-  let entangled = false;
-  let measured = false;
-  let outcomes = [];
-
-  function drawCircles(aState = null, bState = null) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // A circle
-    drawQubit(160, 90, aState);
-    // B circle
-    drawQubit(540, 90, bState);
-
-    // Link line if entangled
-    if (entangled) {
-      ctx.strokeStyle = "rgba(41,178,178,0.6)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(260, 90);
-      ctx.lineTo(440, 90);
-      ctx.stroke();
-      ctx.font = "14px sans-serif";
-      ctx.fillStyle = "#29b2b2";
-      ctx.fillText("Entangled", 332, 112);
-    }
-
-    // Outcomes log
-    ctx.font = "13px monospace";
-    ctx.fillStyle = "rgba(255,255,255,0.8)";
-    const startY = 200;
-    ctx.fillText("Runs (Z-basis):", 40, startY);
-    outcomes.slice(-8).forEach((o, i) => {
-      const y = startY + 18 + i * 16;
-      ctx.fillText(`${o}`, 40, y);
-    });
-  }
-
-  function drawQubit(x, y, state) {
-    // circle
-    ctx.fillStyle = "rgba(255,255,255,0.06)";
-    ctx.strokeStyle = "rgba(255,255,255,0.25)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(x, y, 60, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    // label
-    ctx.font = "16px sans-serif";
-    ctx.fillStyle = "rgba(255,255,255,0.8)";
-    ctx.textAlign = "center";
-    ctx.fillText(state === null ? "?" : state > 0 ? "+1" : "−1", x, y + 6);
-  }
-
-  function measureZ() {
-    let a, b;
-    if (entangled) {
-      a = Math.random() < 0.5 ? +1 : -1;
-      b = a; // perfect correlation in Z (Bell-like toy)
-    } else {
-      a = Math.random() < 0.5 ? +1 : -1;
-      b = Math.random() < 0.5 ? +1 : -1;
-    }
-    measured = true;
-    outcomes.push(`A: ${a > 0 ? "+1" : "-1"}   B: ${b > 0 ? "+1" : "-1"}   ${entangled ? "(corr)" : ""}`);
-    drawCircles(a, b);
-  }
-
-  function reset() {
-    measured = false;
-    drawCircles(null, null);
-  }
-
-  drawCircles();
-
-  const btnEnt = document.getElementById("btn-entangle");
-  const btnSep = document.getElementById("btn-separable");
-  const btnMeas = document.getElementById("btn-measureZ");
-  const btnReset = document.getElementById("btn-reset-ent");
-
-  if (btnEnt) btnEnt.onclick = () => { entangled = true; reset(); };
-  if (btnSep) btnSep.onclick = () => { entangled = false; reset(); };
-  if (btnMeas) btnMeas.onclick = () => measureZ();
-  if (btnReset) btnReset.onclick = () => { outcomes = []; reset(); };
-}
-initEntanglementDemo();
-
-/*-----------------------------------------------------------
-  8️⃣  H + CNOT → BELL STATE  (circuit stepper)
+/*----------------------------------------------------------- 
+  8️⃣  H + CNOT → BELL STATE  (animated, clear UP motion at CNOT)
   -----------------------------------------------------------*/
 function initBellCircuit() {
   const svg = document.getElementById("bell-circuit");
   if (!svg) return;
 
-  let step = 0; // 0: |00>, 1: after H, 2: after CNOT
-  const lbl = document.getElementById("bell-state-label");
+  // Existing SVG bits
+  const gateH    = document.getElementById("gateH");
+  const gateCNOT = document.getElementById("gateCNOT");
+  const lblRight = document.getElementById("bell-state-label"); // we reposition this near CNOT
+
   const btnNext = document.getElementById("bell-next");
   const btnPrev = document.getElementById("bell-prev");
 
-  function setStateText() {
-    if (!lbl) return;
-    if (step === 0) lbl.innerHTML = "|00⟩";
-    if (step === 1) lbl.innerHTML = "(|00⟩ + |10⟩)/√2";
-    if (step === 2) lbl.innerHTML = "(|00⟩ + |11⟩)/√2";
+  // Geometry from your SVG
+  const x0   = 90;                   // start x
+  const xHc  = 230;                  // H gate center (200 + 60/2)
+  const xMid = 300;                  // between H and CNOT
+  const xC   = 420;                  // CNOT column
+  const xOut = 470;                  // output label just to the right of CNOT
+
+  const yTop = 70;
+  const yBot = 150;
+
+  // Style
+  const ACCENT = "#57e5e0";
+  const EDGE   = "rgba(255,255,255,0.7)";
+  const FILL   = "rgba(255,255,255,0.06)";
+  const TEXT   = "#ffffff";
+
+  // Token factory (rounded chips)
+  function makeToken(x, y, text) {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x - 22);
+    rect.setAttribute("y", y - 14);
+    rect.setAttribute("width", 44);
+    rect.setAttribute("height", 28);
+    rect.setAttribute("rx", 14);
+    rect.setAttribute("fill", FILL);
+    rect.setAttribute("stroke", EDGE);
+    rect.setAttribute("stroke-width", "2");
+
+    const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    t.setAttribute("x", x);
+    t.setAttribute("y", y + 6);
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("font-family", "ui-sans-serif, Segoe UI, sans-serif");
+    t.setAttribute("font-size", "16");
+    t.setAttribute("fill", TEXT);
+    t.textContent = text;
+
+    g.appendChild(rect); g.appendChild(t);
+    svg.appendChild(g);
+    return { rect, t };
+  }
+  function setTokenPos(tok, x, y) {
+    tok.rect.setAttribute("x", x - 22);
+    tok.rect.setAttribute("y", y - 14);
+    tok.t.setAttribute("x", x);
+    tok.t.setAttribute("y", y + 6);
+  }
+  function setTokenText(tok, txt, glow=false) {
+    tok.t.textContent = txt;
+    tok.rect.setAttribute("stroke", glow ? ACCENT : EDGE);
+    tok.rect.setAttribute("fill", glow ? "rgba(120,250,245,0.12)" : FILL);
   }
 
-  function highlightGate() {
-    // reset
-    for (const id of ["gateH", "gateCNOT"]) {
-      const el = document.getElementById(id);
-      if (el) el.setAttribute("opacity", "0.35");
-    }
-    if (step === 1) {
-      const g = document.getElementById("gateH");
-      if (g) g.setAttribute("opacity", "1");
-    }
-    if (step === 2) {
-      const g = document.getElementById("gateCNOT");
-      if (g) g.setAttribute("opacity", "1");
-    }
+  // Easing & tweens
+  const ease = u => (u < 0.5 ? 2*u*u : -1 + (4 - 2*u)*u); // easeInOutQuad
+  function tweenPos(tok, x0, y0, x1, y1, ms=450) {
+    return new Promise(res => {
+      const t0 = performance.now();
+      (function step(t){
+        const u = Math.min(1, (t - t0)/ms);
+        const e = ease(u);
+        setTokenPos(tok, x0 + (x1-x0)*e, y0 + (y1-y0)*e);
+        if (u < 1) requestAnimationFrame(step); else res();
+      })(performance.now());
+    });
+  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // Flash the vertical CNOT link (clear “interaction” cue)
+  function flashVertical() {
+    const v = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    v.setAttribute("x1", xC); v.setAttribute("x2", xC);
+    v.setAttribute("y1", yTop); v.setAttribute("y2", yBot);
+    v.setAttribute("stroke", ACCENT); v.setAttribute("stroke-width", "3");
+    v.setAttribute("stroke-linecap", "round");
+    svg.appendChild(v);
+    let a = 1;
+    (function fade(){
+      a -= 0.04; v.setAttribute("opacity", String(Math.max(0,a)));
+      if (a > 0) requestAnimationFrame(fade); else svg.removeChild(v);
+    })();
   }
 
-  function draw() {
-    setStateText();
-    highlightGate();
+  // Tokens
+  const tokTop = makeToken(x0, yTop, "|0⟩");
+  const tokBot = makeToken(x0, yBot, "|0⟩");
+
+  // Gate highlighting + dim far-right |ψ⟩ after CNOT
+  function highlight(step) {
+    if (gateH)    gateH.setAttribute("opacity", step === 1 ? "1" : "0.35");
+    if (gateCNOT) gateCNOT.setAttribute("opacity", step === 2 ? "1" : "0.35");
+    const psi = Array.from(svg.querySelectorAll("text")).find(t => t.textContent.trim() === "|ψ⟩");
+    if (psi) psi.setAttribute("opacity", step === 2 ? "0.25" : "1");
   }
 
-  if (btnNext) btnNext.onclick = () => { step = Math.min(2, step + 1); draw(); };
-  if (btnPrev) btnPrev.onclick = () => { step = Math.max(0, step - 1); draw(); };
+  // Output label: position **right after CNOT**, centered between wires
+  function setOutputLabel(txt) {
+    if (!lblRight) return;
+    lblRight.setAttribute("x", xOut);
+    lblRight.setAttribute("y", (yTop + yBot) / 2 + 6);
+    lblRight.setAttribute("text-anchor", "start");
+    lblRight.textContent = txt;
+  }
 
-  draw();
+  // Steps
+  async function toStep0() {
+    highlight(0);
+    setTokenText(tokTop, "|0⟩"); setTokenText(tokBot, "|0⟩");
+    setTokenPos(tokTop, x0, yTop); setTokenPos(tokBot, x0, yBot);
+    setOutputLabel("|00⟩");
+  }
+
+  // Top qubit enters H → |+⟩, bottom stays |0⟩
+  async function toStep1() {
+    await toStep0();
+    highlight(1);
+    await tweenPos(tokTop, x0, yTop, xHc - 6, yTop, 420);     // into H
+    setTokenText(tokTop, "|+⟩", true);
+    await tweenPos(tokTop, xHc - 6, yTop, xMid, yTop, 360);   // out of H
+    setOutputLabel("|+0⟩ = (|00⟩ + |10⟩)/√2");
+  }
+
+  // Both qubits to CNOT; bottom visibly GOES UP, holds, then down → entangled
+  async function toStep2() {
+    await toStep1();
+    highlight(2);
+
+    // Slide both horizontally to the CNOT column first
+    await Promise.all([
+      tweenPos(tokTop, xMid, yTop, xC - 10, yTop, 420),
+      tweenPos(tokBot, x0,  yBot, xC - 10, yBot, 500)
+    ]);
+
+    // *** KEY PART: bottom token goes UP the vertical wire and HOLDS there ***
+    await tweenPos(tokBot, xC - 10, yBot, xC - 10, yTop + 2, 280); // go up
+    flashVertical();                       // emphasize the interaction
+    await sleep(260);                      // hold at the top briefly
+    await tweenPos(tokBot, xC - 10, yTop + 2, xC - 10, yBot, 280); // go back down
+
+    // After CNOT → entangled; show output label right after the gate
+    setTokenText(tokTop, "↯", true);
+    setTokenText(tokBot, "↯", true);
+    setOutputLabel("( |00⟩ + |11⟩ )/√2");
+
+    // Drift both a short distance to the right (still near CNOT)
+    await Promise.all([
+      tweenPos(tokTop, xC - 10, yTop, xOut, yTop, 300),
+      tweenPos(tokBot, xC - 10, yBot, xOut, yBot, 300)
+    ]);
+  }
+
+  // Controller
+  let step = 0;
+  async function goTo(n) {
+    if (n <= 0) { step = 0; await toStep0(); return; }
+    if (n === 1) { step = 1; await toStep1(); return; }
+    if (n >= 2) { step = 2; await toStep2(); return; }
+  }
+
+  if (btnNext) btnNext.onclick = () => goTo(Math.min(2, step + 1));
+  if (btnPrev) btnPrev.onclick = () => goTo(Math.max(0, step - 1));
+
+  // Init
+  toStep0();
 }
 initBellCircuit();
+
+
+
+
 
 /*-----------------------------------------------------------
   9️⃣  RSA STORY — multiply easy, factor hard
